@@ -8,9 +8,10 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.net.URI;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public class WikimediaChangesProducer {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 
         String bootstrapServers = "127.0.0.1:9092";
 
@@ -27,7 +28,7 @@ public class WikimediaChangesProducer {
         String topic = "wikimedia.recentchanges";
 
         // EventHandler
-        EventHandler eventHandler = TODO;
+        EventHandler eventHandler = new WikimediaChangesHandler(producer,topic);
         String url = "https://stream.wikimedia.org/v2/stream/recentchange";
         EventSource.Builder builder = new EventSource.Builder(eventHandler, URI.create(url));
         EventSource eventSource = builder.build();
@@ -35,5 +36,7 @@ public class WikimediaChangesProducer {
         // Start the Producer in another Thread
         eventSource.start();
 
+        // produce for 10-min and block the program until then
+        TimeUnit.MINUTES.sleep(10);
     }
 }

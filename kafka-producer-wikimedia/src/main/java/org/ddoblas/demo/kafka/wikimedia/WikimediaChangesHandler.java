@@ -3,6 +3,7 @@ package org.ddoblas.demo.kafka.wikimedia;
 import com.launchdarkly.eventsource.EventHandler;
 import com.launchdarkly.eventsource.MessageEvent;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,17 +30,19 @@ public class WikimediaChangesHandler implements EventHandler {
     }
 
     @Override
-    public void onMessage(String s, MessageEvent messageEvent) throws Exception {
-
+    public void onMessage(String s, MessageEvent messageEvent){
+        log.info(messageEvent.getData());
+        // asynchronous
+        producer.send(new ProducerRecord<>(topic, messageEvent.getData()));
     }
 
     @Override
-    public void onComment(String s) throws Exception {
-
+    public void onComment(String s){
+        // Nothing here
     }
 
     @Override
     public void onError(Throwable throwable) {
-
+        log.error("Error in Stream Reading", throwable);
     }
 }
