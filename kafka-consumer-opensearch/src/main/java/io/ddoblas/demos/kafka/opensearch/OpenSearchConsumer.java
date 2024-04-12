@@ -105,7 +105,7 @@ public class OpenSearchConsumer {
                 logger.info("The wikimedia index already exists");
             }
 
-            consumer.subscribe(Collections.singleton("wikimedia.recentchange"));
+            consumer.subscribe(Collections.singleton("wikimedia.recentchanges"));
 
             while (true){
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(3000));
@@ -113,15 +113,20 @@ public class OpenSearchConsumer {
                 int recordCount = records.count();
                 logger.info("Received " + recordCount + " records");
 
-                for (ConsumerRecord<String, String> record : records) {
-                    // send the record into opensearch
-                    IndexRequest indexRequest = new IndexRequest("wikimedia")
-                            .source(record.value(), XContentType.JSON);
+                try {
+                    for (ConsumerRecord<String, String> record : records) {
+                        // send the record into opensearch
+                        IndexRequest indexRequest = new IndexRequest("wikimedia")
+                                .source(record.value(), XContentType.JSON);
 
-                   IndexResponse indexResponse = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
+                        IndexResponse indexResponse = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
 
-                   log.info(indexResponse.getId());
+                        log.info(indexResponse.getId());
+                    }
+                } catch (Exception e) {
+
                 }
+
             }
         }
 
