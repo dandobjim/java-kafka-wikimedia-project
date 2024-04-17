@@ -12,6 +12,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.RequestOptions;
@@ -75,6 +77,7 @@ public class OpenSearchConsumer {
         props.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 
         // create consumer
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
@@ -124,6 +127,8 @@ public class OpenSearchConsumer {
                 int recordCount = records.count();
                 logger.info("Received " + recordCount + " records");
 
+                BulkRequest bulkRequest = new BulkRequest();
+
                 for (ConsumerRecord<String, String> record : records) {
                     // send the record into opensearch
 
@@ -139,14 +144,26 @@ public class OpenSearchConsumer {
                                 .source(record.value(), XContentType.JSON)
                                 .id(id);
 
-                        IndexResponse indexResponse = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
-
-                        log.info(indexResponse.getId());
+//                        IndexResponse indexResponse = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
+//                        log.info(indexResponse.getId());
+                        bulkRequest.add(indexRequest);
                     } catch (Exception e) {
 
                     }
                 }
 
+                if (bulkRequest.numberOfActions() > 0) {
+                    BulkResponse bulkResponse = openSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+                    log.info("Inserted " + bulkResponse.getItems().length + " records");
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e){}
+                }
+
+                // Commit offsets after the batch is consume
+                consumer.commitSync();
+                log.info("Committed " + recordCount + " records");
             }
         }
 
