@@ -8,4 +8,4 @@ I created this project to learn how kafka could be applied inside a java project
 This project will be replicated in python
 
 # Design
-![design](public/img/design-java-kafka.svg)
+![design](public/img/design-kafka-java.svg)
